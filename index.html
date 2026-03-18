@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Billing Software</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f4f4f4;
+padding:20px;
+}
+
+.container{
+background:white;
+padding:20px;
+border-radius:10px;
+max-width:900px;
+margin:auto;
+}
+
+h2{
+text-align:center;
+}
+
+input,select{
+padding:8px;
+margin:5px;
+}
+
+button{
+padding:8px 15px;
+cursor:pointer;
+}
+
+table{
+width:100%;
+margin-top:20px;
+border-collapse:collapse;
+}
+
+th,td{
+border:1px solid #ddd;
+padding:10px;
+text-align:center;
+}
+
+th{
+background:#eee;
+}
+
+.total{
+font-size:20px;
+font-weight:bold;
+text-align:right;
+margin-top:20px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<a href="./admin.html">admin</a>
+<h2>Invoice Generator</h2>
+
+<select id="itemSelect">
+<option value="">Select Item</option>
+</select>
+
+<input type="number" id="qty" placeholder="Qty" value="1">
+
+<button onclick="addItem()">Add Item</button>
+
+
+<table id="billTable">
+
+<thead>
+
+<tr>
+<th>Item</th>
+<th>Price</th>
+<th>Qty</th>
+<th>Total</th>
+<th>Action</th>
+</tr>
+
+</thead>
+
+<tbody></tbody>
+
+</table>
+
+<div class="total">
+Grand Total: ₹ <span id="grandTotal">0</span>
+</div>
+
+</div>
+
+
+<script>
+
+let items=[]
+let bill=[]
+
+async function loadItems(){
+
+const res = await fetch("http://localhost:3000/api/items")
+
+items = await res.json()
+
+const select = document.getElementById("itemSelect")
+
+items.forEach(item=>{
+
+let option = document.createElement("option")
+option.value = item.id
+option.textContent = item.name + " (₹"+item.price+")"
+
+select.appendChild(option)
+
+})
+
+}
+
+loadItems()
+
+
+function addItem(){
+
+const id = document.getElementById("itemSelect").value
+const qty = document.getElementById("qty").value
+
+if(!id || qty<=0) return
+
+const item = items.find(i=>i.id==id)
+
+const total = item.price * qty
+
+bill.push({
+name:item.name,
+price:item.price,
+qty:qty,
+total:total
+})
+
+renderBill()
+
+}
+
+
+function renderBill(){
+
+const tbody = document.querySelector("#billTable tbody")
+
+tbody.innerHTML=""
+
+let grandTotal=0
+
+bill.forEach((item,index)=>{
+
+grandTotal += item.total
+
+let row = `
+
+<tr>
+
+<td>${item.name}</td>
+
+<td>${item.price}</td>
+
+<td>${item.qty}</td>
+
+<td>${item.total}</td>
+
+<td>
+<button onclick="removeItem(${index})">X</button>
+</td>
+
+</tr>
+
+`
+
+tbody.innerHTML += row
+
+})
+
+document.getElementById("grandTotal").innerText = grandTotal
+
+}
+
+
+function removeItem(index){
+
+bill.splice(index,1)
+
+renderBill()
+
+}
+
+</script>
+
+</body>
+</html>
