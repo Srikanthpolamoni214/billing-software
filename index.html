@@ -7,16 +7,17 @@
 
 body{
 font-family:Arial;
-background:#f4f4f4;
+background:#eef2f7;
 padding:20px;
 }
 
 .container{
 background:white;
 padding:20px;
-border-radius:10px;
+border-radius:12px;
 max-width:900px;
 margin:auto;
+box-shadow:0 0 10px rgba(0,0,0,0.1);
 }
 
 h2{
@@ -24,13 +25,22 @@ text-align:center;
 }
 
 input,select{
-padding:8px;
+padding:10px;
 margin:5px;
+width:200px;
 }
 
 button{
-padding:8px 15px;
+padding:10px 15px;
 cursor:pointer;
+background:#007bff;
+color:white;
+border:none;
+border-radius:5px;
+}
+
+button:hover{
+background:#0056b3;
 }
 
 table{
@@ -46,14 +56,15 @@ text-align:center;
 }
 
 th{
-background:#eee;
+background:#f4f4f4;
 }
 
 .total{
-font-size:20px;
+font-size:22px;
 font-weight:bold;
 text-align:right;
 margin-top:20px;
+color:green;
 }
 
 </style>
@@ -62,33 +73,29 @@ margin-top:20px;
 <body>
 
 <div class="container">
-<a href="./admin.html">admin</a>
-<h2>Invoice Generator</h2>
 
-<select id="itemSelect">
-<option value="">Select Item</option>
-</select>
+<h2> Invoice Generator</h2>
 
-<input type="number" id="qty" placeholder="Qty" value="1">
+<input list="itemsList" id="itemInput" placeholder="Search Item">
+<datalist id="itemsList"></datalist>
+
+<input type="number" id="qty" value="1" min="1">
 
 <button onclick="addItem()">Add Item</button>
 
-
-<table id="billTable">
+<table>
 
 <thead>
-
 <tr>
 <th>Item</th>
 <th>Price</th>
 <th>Qty</th>
 <th>Total</th>
-<th>Action</th>
+<th>Remove</th>
 </tr>
-
 </thead>
 
-<tbody></tbody>
+<tbody id="billBody"></tbody>
 
 </table>
 
@@ -98,28 +105,23 @@ Grand Total: ₹ <span id="grandTotal">0</span>
 
 </div>
 
-
 <script>
 
 let items=[]
-let bill=[]
+let cart=[]
 
+// LOAD ITEMS FROM BACKEND
 async function loadItems(){
 
 const res = await fetch("https://billing-server-vmld.onrender.com/api/items")
-
 items = await res.json()
 
-const select = document.getElementById("itemSelect")
+const list=document.getElementById("itemsList")
 
-items.forEach(item=>{
-
-let option = document.createElement("option")
-option.value = item.id
-option.textContent = item.name + " (₹"+item.price+")"
-
-select.appendChild(option)
-
+items.forEach(i=>{
+let option=document.createElement("option")
+option.value=i.name
+list.appendChild(option)
 })
 
 }
@@ -129,74 +131,61 @@ loadItems()
 
 function addItem(){
 
-const id = document.getElementById("itemSelect").value
-const qty = document.getElementById("qty").value
+const name=document.getElementById("itemInput").value
+const qty=parseInt(document.getElementById("qty").value)
 
-if(!id || qty<=0) return
+const item=items.find(i=>i.name===name)
 
-const item = items.find(i=>i.id==id)
+if(!item){
+alert("Item not found")
+return
+}
 
-const total = item.price * qty
+const total=item.price*qty
 
-bill.push({
+cart.push({
 name:item.name,
 price:item.price,
-qty:qty,
-total:total
+qty,
+total
 })
 
-renderBill()
+render()
 
 }
 
 
-function renderBill(){
+function render(){
 
-const tbody = document.querySelector("#billTable tbody")
+const body=document.getElementById("billBody")
+body.innerHTML=""
 
-tbody.innerHTML=""
+let grand=0
 
-let grandTotal=0
+cart.forEach((c,i)=>{
 
-bill.forEach((item,index)=>{
+grand+=c.total
 
-grandTotal += item.total
-
-let row = `
-
+body.innerHTML+=`
 <tr>
-
-<td>${item.name}</td>
-
-<td>${item.price}</td>
-
-<td>${item.qty}</td>
-
-<td>${item.total}</td>
-
-<td>
-<button onclick="removeItem(${index})">X</button>
-</td>
-
+<td>${c.name}</td>
+<td>₹${c.price}</td>
+<td>${c.qty}</td>
+<td>₹${c.total}</td>
+<td><button onclick="removeItem(${i})">X</button></td>
 </tr>
-
 `
 
-tbody.innerHTML += row
-
 })
 
-document.getElementById("grandTotal").innerText = grandTotal
+document.getElementById("grandTotal").innerText=grand
 
 }
 
 
-function removeItem(index){
-
-bill.splice(index,1)
-
-renderBill()
-
+function removeItem(i){
+cart.splice(i,1)
+render()
 }
 
 </script>
